@@ -1,0 +1,3 @@
+ALTER TABLE `product_skus`
+  ADD COLUMN `a_pedido` BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN `dias_entrega_pedido` INTEGER NULL;

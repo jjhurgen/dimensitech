@@ -1,0 +1,2 @@
+ALTER TABLE `reservations`
+  MODIFY `shipping_type` ENUM('LIMA', 'PROVINCE', 'STORE_PICKUP', 'DELIVERY') NOT NULL;

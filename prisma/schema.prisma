@@ -1,0 +1,636 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  SELLER
+  WAREHOUSE
+}
+
+enum Platform {
+  ANDROID
+  IPHONE
+}
+
+enum ActiveStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum PurchaseStatus {
+  REGISTERED
+  CANCELLED
+}
+
+enum PhoneUnitStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+  RETURNED
+  CANCELLED
+}
+
+enum MovementType {
+  PURCHASE_IN
+  SALE_OUT
+  GIFT_OUT
+  RESERVATION_HOLD
+  RESERVATION_RELEASE
+  RETURN_IN
+  ADJUSTMENT_IN
+  ADJUSTMENT_OUT
+  CANCELLED
+}
+
+enum ReferenceType {
+  PURCHASE
+  SALE
+  RESERVATION
+  MANUAL
+}
+
+enum SaleChannel {
+  STORE
+  WEB
+  WHATSAPP
+  DELIVERY
+}
+
+enum PaymentMethod {
+  CASH
+  YAPE
+  PLIN
+  TRANSFER
+  CARD
+  MIXED
+}
+
+enum SaleStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  PARTIAL
+}
+
+enum SaleItemType {
+  PHONE
+  ACCESSORY
+}
+
+enum ShippingType {
+  LIMA
+  PROVINCE
+  STORE_PICKUP
+  DELIVERY
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  PARTIAL_CONFIRMED
+  CANCELLED
+  EXPIRED
+}
+
+enum DiscountType {
+  FIXED_AMOUNT
+  PERCENTAGE
+  FINAL_PRICE
+}
+
+enum DocumentType {
+  DNI
+  CE
+  RUC
+}
+
+enum ProductCondition {
+  NEW_SEALED
+  REFURBISHED
+  OPEN_BOX
+  USED
+}
+
+enum NotificationType {
+  NEW_RESERVATION
+  RESERVATION_EXPIRING
+  RESERVATION_EXPIRED
+  LOW_PHONE_STOCK
+  LOW_ACCESSORY_STOCK
+  OUT_OF_STOCK
+  SALE_CONFIRMED
+  PURCHASE_REGISTERED
+}
+
+model User {
+  id                 Int       @id @default(autoincrement())
+  name               String
+  email              String    @unique
+  dni                String?   @unique
+  firstNames         String?   @map("nombres")
+  lastNames          String?   @map("apellidos")
+  birthDate          DateTime? @map("fecha_nacimiento")
+  address            String?
+  phone              String?
+  password           String
+  role               UserRole  @default(SELLER)
+  isActive           Boolean   @default(true) @map("is_active")
+  mustChangePassword Boolean   @default(false) @map("must_change_password")
+  deactivatedAt      DateTime? @map("deactivated_at")
+  lastLoginAt        DateTime? @map("last_login_at")
+  lastLoginIp        String?   @map("last_login_ip") @db.VarChar(45)
+  lastLoginUserAgent String?   @map("last_login_user_agent") @db.Text
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  purchases               Purchase[]
+  sales                   Sale[]
+  inventoryMovements      InventoryMovement[]
+  notifications           Notification[]
+  createdPromotionBanners PromotionBanner[]   @relation("PromotionBannerCreatedBy")
+  deletedPromotionBanners PromotionBanner[]   @relation("PromotionBannerDeletedBy")
+  loginEvents             UserLoginEvent[]
+
+  @@map("users")
+}
+
+model UserLoginEvent {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+  userAgent String?  @map("user_agent") @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("user_login_events")
+}
+
+model Provider {
+  id          Int          @id @default(autoincrement())
+  name        String
+  dniRuc      String?      @map("dni_ruc")
+  phone       String?
+  whatsapp    String?
+  address     String?
+  city        String?
+  observation String?
+  status      ActiveStatus @default(ACTIVE)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  purchases    Purchase[]
+  productTypes ProviderProductType[]
+
+  @@index([name])
+  @@index([dniRuc])
+  @@map("providers")
+}
+
+model ProviderProductType {
+  providerId    Int      @map("provider_id")
+  productTypeId Int      @map("product_type_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  provider    Provider    @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  productType ProductType @relation(fields: [productTypeId], references: [id], onDelete: Cascade)
+
+  @@id([providerId, productTypeId])
+  @@index([productTypeId])
+  @@map("provider_product_types")
+}
+
+model Customer {
+  id           Int          @id @default(autoincrement())
+  dni          String?      @unique
+  documentType DocumentType @default(DNI) @map("document_type")
+  firstNames   String       @map("nombres")
+  lastNames    String       @map("apellidos")
+  phone        String?
+  address      String?
+  city         String?
+  observation  String?
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  sales Sale[]
+
+  @@index([firstNames, lastNames])
+  @@map("customers")
+}
+
+model ProductType {
+  id              Int          @id @default(autoincrement())
+  name            String       @unique @map("nombre")
+  requiresImei    Boolean      @default(false) @map("requiere_imei")
+  defaultMinStock Int          @default(3) @map("stock_minimo_default")
+  status          ActiveStatus @default(ACTIVE)
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  skus          ProductSku[]
+  imageLibrary  ProductImageLibrary[]
+  providerTypes ProviderProductType[]
+
+  @@map("product_types")
+}
+
+model Brand {
+  id        Int          @id @default(autoincrement())
+  name      String       @unique
+  status    ActiveStatus @default(ACTIVE)
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@map("brands")
+}
+
+model ProductImageLibrary {
+  id               Int       @id @default(autoincrement())
+  productTypeId    Int?      @map("product_type_id")
+  brand            String?
+  productName      String    @map("product_name")
+  commercialModel  String?   @map("commercial_model")
+  platform         Platform?
+  color            String?
+  accessoryVariant String?   @map("accessory_variant")
+  compatibility    String?
+  imageUrl         String    @map("image_url")
+  imageHash        String?   @map("image_hash")
+  altText          String?   @map("alt_text")
+  isActive         Boolean   @default(true) @map("is_active")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  productType ProductType? @relation(fields: [productTypeId], references: [id])
+  skus        ProductSku[]
+
+  @@index([brand, commercialModel, color])
+  @@index([productTypeId, productName, compatibility, color])
+  @@index([imageHash])
+  @@map("product_image_library")
+}
+
+model ProductSku {
+  id                 Int          @id @default(autoincrement())
+  skuCode            String       @unique @map("internal_code")
+  productTypeId      Int          @map("product_type_id")
+  imageId            Int?         @map("image_id")
+  brand              String       @map("marca")
+  name               String       @map("nombre")
+  commercialModel    String?      @map("commercial_model")
+  platform           Platform?    @map("plataforma")
+  color              String?
+  storage            String?      @map("almacenamiento")
+  ram                String?
+  condition          ProductCondition @default(NEW_SEALED) @map("condicion")
+  modelNumber        String?      @map("model_number")
+  shortDescription   String?      @map("descripcion_corta") @db.Text
+  suggestedSalePrice Decimal      @default(0) @map("precio_venta_sugerido") @db.Decimal(12, 2)
+  visibleInStore     Boolean      @default(false) @map("visible_en_tienda")
+  availableOnRequest Boolean      @default(false) @map("a_pedido")
+  requestDeliveryDays Int?        @map("dias_entrega_pedido")
+  minStock           Int?         @map("stock_minimo")
+  status             ActiveStatus @default(ACTIVE)
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
+
+  productType        ProductType               @relation(fields: [productTypeId], references: [id])
+  image              ProductImageLibrary?      @relation(fields: [imageId], references: [id])
+  images             ProductImage[]
+  purchaseItems      PurchaseItem[]
+  phoneUnits         PhoneUnit[]
+  inventoryMovements InventoryMovement[]
+  saleItems          SaleItem[]
+  reservationItems   ReservationItem[]
+  discountProducts   DiscountCampaignProduct[]
+  promotionBanners   PromotionBanner[]
+
+  @@index([name, brand, commercialModel])
+  @@index([visibleInStore, status])
+  @@map("product_skus")
+}
+
+model DiscountCampaign {
+  id           Int          @id @default(autoincrement())
+  name         String
+  badgeLabel   String       @map("badge_label")
+  badgeColor   String       @default("TEAL") @map("badge_color")
+  discountType DiscountType @map("discount_type")
+  startsAt     DateTime     @map("starts_at")
+  endsAt       DateTime     @map("ends_at")
+  isActive     Boolean      @default(true) @map("is_active")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  products DiscountCampaignProduct[]
+  banners  PromotionBanner[]
+
+  @@index([isActive, startsAt, endsAt])
+  @@map("discount_campaigns")
+}
+
+model PromotionBanner {
+  id           Int       @id @default(autoincrement())
+  title        String
+  imageUrl     String    @map("image_url")
+  productSkuId Int       @map("product_sku_id")
+  campaignId   Int?      @map("campaign_id")
+  createdById  Int?      @map("created_by_id")
+  deletedById  Int?      @map("deleted_by_id")
+  startsAt     DateTime  @map("starts_at")
+  endsAt       DateTime  @map("ends_at")
+  sortOrder    Int       @default(0) @map("sort_order")
+  isActive     Boolean   @default(true) @map("is_active")
+  deletedAt    DateTime? @map("deleted_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  productSku ProductSku        @relation(fields: [productSkuId], references: [id], onDelete: Cascade)
+  campaign   DiscountCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  createdBy  User?             @relation("PromotionBannerCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  deletedBy  User?             @relation("PromotionBannerDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+
+  @@index([isActive, startsAt, endsAt, sortOrder])
+  @@index([productSkuId])
+  @@index([createdById])
+  @@index([deletedById])
+  @@map("promotion_banners")
+}
+
+model DiscountCampaignProduct {
+  id           Int      @id @default(autoincrement())
+  campaignId   Int      @map("campaign_id")
+  productSkuId Int      @map("product_sku_id")
+  value        Decimal  @db.Decimal(12, 2)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  campaign   DiscountCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  productSku ProductSku       @relation(fields: [productSkuId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, productSkuId])
+  @@index([productSkuId])
+  @@map("discount_campaign_products")
+}
+
+model ProductImage {
+  id           Int     @id @default(autoincrement())
+  productSkuId Int     @map("product_sku_id")
+  imageUrl     String  @map("image_url")
+  isPrimary    Boolean @default(false) @map("is_primary")
+  order        Int     @default(0) @map("orden")
+
+  productSku ProductSku @relation(fields: [productSkuId], references: [id], onDelete: Cascade)
+
+  @@map("product_images")
+}
+
+model Purchase {
+  id            Int            @id @default(autoincrement())
+  purchaseCode  String         @unique @map("purchase_code")
+  purchaseDate  DateTime       @map("purchase_date")
+  providerId    Int            @map("provider_id")
+  freightAmount Decimal        @default(0) @map("freight_amount") @db.Decimal(12, 2)
+  notes         String?        @db.Text
+  status        PurchaseStatus @default(REGISTERED)
+  userId        Int            @map("user_id")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  provider   Provider       @relation(fields: [providerId], references: [id])
+  user       User           @relation(fields: [userId], references: [id])
+  items      PurchaseItem[]
+  phoneUnits PhoneUnit[]
+
+  @@index([purchaseDate])
+  @@map("purchases")
+}
+
+model PurchaseItem {
+  id                Int      @id @default(autoincrement())
+  purchaseId        Int      @map("purchase_id")
+  productSkuId      Int      @map("product_sku_id")
+  productType       String   @map("product_type")
+  quantity          Int
+  unitPurchasePrice Decimal  @map("unit_purchase_price") @db.Decimal(12, 2)
+  totalPrice        Decimal  @map("total_price") @db.Decimal(12, 2)
+  allocatedFreight  Decimal? @map("allocated_freight") @db.Decimal(12, 2)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  purchase   Purchase    @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  productSku ProductSku  @relation(fields: [productSkuId], references: [id])
+  phoneUnits PhoneUnit[]
+
+  @@index([productSkuId])
+  @@map("purchase_items")
+}
+
+model PhoneUnit {
+  id                   Int             @id @default(autoincrement())
+  productSkuId         Int             @map("product_sku_id")
+  purchaseId           Int             @map("purchase_id")
+  purchaseItemId       Int             @map("purchase_item_id")
+  imei1                String          @unique
+  imei2                String?         @unique
+  serialNumber         String?         @map("serial_number")
+  modelNumber          String?         @map("model_number")
+  modelNumber2         String?         @map("model_number_2")
+  platform             Platform        @map("plataforma")
+  color                String?
+  storage              String?         @map("almacenamiento")
+  ram                  String?
+  unitPurchasePrice    Decimal         @map("unit_purchase_price") @db.Decimal(12, 2)
+  allocatedFreight     Decimal?        @map("allocated_freight") @db.Decimal(12, 2)
+  whiteListRegistered  Boolean         @default(false) @map("white_list_registered")
+  status               PhoneUnitStatus @default(AVAILABLE)
+  currentReservationId Int?            @map("current_reservation_id")
+  saleId               Int?            @map("sale_id")
+  createdAt            DateTime        @default(now()) @map("created_at")
+  updatedAt            DateTime        @updatedAt @map("updated_at")
+
+  productSku         ProductSku          @relation(fields: [productSkuId], references: [id])
+  purchase           Purchase            @relation(fields: [purchaseId], references: [id])
+  purchaseItem       PurchaseItem        @relation(fields: [purchaseItemId], references: [id])
+  currentReservation Reservation?        @relation(fields: [currentReservationId], references: [id])
+  sale               Sale?               @relation(fields: [saleId], references: [id])
+  movements          InventoryMovement[]
+  saleItems          SaleItem[]
+  reservationItems   ReservationItem[]
+
+  @@index([status])
+  @@index([productSkuId, status])
+  @@map("phone_units")
+}
+
+model InventoryMovement {
+  id            Int           @id @default(autoincrement())
+  productSkuId  Int           @map("product_sku_id")
+  phoneUnitId   Int?          @map("phone_unit_id")
+  movementType  MovementType  @map("movement_type")
+  quantity      Int
+  unitCost      Decimal       @default(0) @map("unit_cost") @db.Decimal(12, 2)
+  referenceType ReferenceType @map("reference_type")
+  referenceId   Int           @map("reference_id")
+  notes         String?       @db.Text
+  userId        Int?          @map("user_id")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  productSku ProductSku @relation(fields: [productSkuId], references: [id])
+  phoneUnit  PhoneUnit? @relation(fields: [phoneUnitId], references: [id])
+  user       User?      @relation(fields: [userId], references: [id])
+
+  @@index([productSkuId, createdAt])
+  @@index([referenceType, referenceId])
+  @@map("inventory_movements")
+}
+
+model Sale {
+  id                 Int           @id @default(autoincrement())
+  saleCode           String        @unique @map("sale_code")
+  saleDate           DateTime      @map("sale_date")
+  customerId         Int           @map("customer_id")
+  saleChannel        SaleChannel   @default(STORE) @map("sale_channel")
+  paymentMethod      PaymentMethod @default(CASH) @map("payment_method")
+  subtotal           Decimal       @default(0) @db.Decimal(12, 2)
+  discountTotal      Decimal       @default(0) @map("discount_total") @db.Decimal(12, 2)
+  giftCostTotal      Decimal       @default(0) @map("gift_cost_total") @db.Decimal(12, 2)
+  freightCostApplied Decimal?      @map("freight_cost_applied") @db.Decimal(12, 2)
+  total              Decimal       @default(0) @db.Decimal(12, 2)
+  grossProfit        Decimal       @default(0) @map("gross_profit") @db.Decimal(12, 2)
+  netProfitEstimated Decimal       @default(0) @map("net_profit_estimated") @db.Decimal(12, 2)
+  status             SaleStatus    @default(CONFIRMED)
+  notes              String?       @db.Text
+  userId             Int           @map("user_id")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+
+  customer   Customer    @relation(fields: [customerId], references: [id])
+  user       User        @relation(fields: [userId], references: [id])
+  items      SaleItem[]
+  phoneUnits PhoneUnit[]
+
+  @@index([saleDate])
+  @@map("sales")
+}
+
+model SaleItem {
+  id             Int          @id @default(autoincrement())
+  saleId         Int          @map("sale_id")
+  productSkuId   Int          @map("product_sku_id")
+  phoneUnitId    Int?         @map("phone_unit_id")
+  itemType       SaleItemType @map("item_type")
+  quantity       Int
+  unitSalePrice  Decimal      @map("unit_sale_price") @db.Decimal(12, 2)
+  unitCost       Decimal      @map("unit_cost") @db.Decimal(12, 2)
+  discount       Decimal      @default(0) @db.Decimal(12, 2)
+  totalSalePrice Decimal      @map("total_sale_price") @db.Decimal(12, 2)
+  totalCost      Decimal      @map("total_cost") @db.Decimal(12, 2)
+  isGift         Boolean      @default(false) @map("is_gift")
+  profit         Decimal      @default(0) @db.Decimal(12, 2)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  sale       Sale       @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productSku ProductSku @relation(fields: [productSkuId], references: [id])
+  phoneUnit  PhoneUnit? @relation(fields: [phoneUnitId], references: [id])
+
+  @@index([productSkuId])
+  @@map("sale_items")
+}
+
+model Reservation {
+  id                    Int               @id @default(autoincrement())
+  reservationCode       String            @unique @map("reservation_code")
+  customerName          String            @map("customer_name")
+  customerPhone         String            @map("customer_phone")
+  customerDni           String?           @map("customer_dni")
+  shippingType          ShippingType      @map("shipping_type")
+  destinationDepartment String?           @map("destination_department")
+  destinationProvince   String?           @map("destination_province")
+  destinationCity       String?           @map("destination_city")
+  addressReference      String?           @map("address_reference")
+  status                ReservationStatus @default(PENDING)
+  expiresAt             DateTime          @map("expires_at")
+  whatsappMessage       String?           @map("whatsapp_message") @db.Text
+  totalEstimated        Decimal           @default(0) @map("total_estimated") @db.Decimal(12, 2)
+  notes                 String?           @db.Text
+  createdAt             DateTime          @default(now()) @map("created_at")
+  updatedAt             DateTime          @updatedAt @map("updated_at")
+
+  items      ReservationItem[]
+  phoneUnits PhoneUnit[]
+
+  @@index([status, expiresAt])
+  @@map("reservations")
+}
+
+model ReservationItem {
+  id                   Int               @id @default(autoincrement())
+  reservationId        Int               @map("reservation_id")
+  productSkuId         Int               @map("product_sku_id")
+  phoneUnitId          Int?              @map("phone_unit_id")
+  quantityRequested    Int               @map("quantity_requested")
+  quantityConfirmed    Int               @default(0) @map("quantity_confirmed")
+  unitPrice            Decimal           @map("unit_price") @db.Decimal(12, 2)
+  originalUnitPrice    Decimal?          @map("original_unit_price") @db.Decimal(12, 2)
+  discountUnitAmount   Decimal?          @map("discount_unit_amount") @db.Decimal(12, 2)
+  discountLabel        String?           @map("discount_label")
+  discountCampaignName String?           @map("discount_campaign_name")
+  status               ReservationStatus @default(PENDING)
+  createdAt            DateTime          @default(now()) @map("created_at")
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  productSku  ProductSku  @relation(fields: [productSkuId], references: [id])
+  phoneUnit   PhoneUnit?  @relation(fields: [phoneUnitId], references: [id])
+
+  @@index([productSkuId, status])
+  @@map("reservation_items")
+}
+
+model Expense {
+  id          Int      @id @default(autoincrement())
+  expenseDate DateTime @map("expense_date")
+  concept     String
+  category    String?
+  amount      Decimal  @db.Decimal(12, 2)
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([expenseDate])
+  @@map("expenses")
+}
+
+model Notification {
+  id        Int              @id @default(autoincrement())
+  type      NotificationType
+  title     String
+  message   String           @db.Text
+  isRead    Boolean          @default(false) @map("is_read")
+  userId    Int?             @map("user_id")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([isRead, createdAt])
+  @@map("notifications")
+}
+
+model Setting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}

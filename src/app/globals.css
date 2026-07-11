@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --brand-navy: #003f48;
+  --brand-blue: #098d8f;
+  --brand-red: #098d8f;
+  --brand-green: #098d8f;
+  --surface: #ffffff;
+  --page: #f5f7fb;
+  --border: #dbe3ef;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(15, 98, 254, 0.08), transparent 32rem),
+    linear-gradient(180deg, #f8fafc 0%, var(--page) 100%);
+  color: #0f172a;
+  min-height: 100vh;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(15, 98, 254, 0.18);
+}
+
+::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.brand-logo-scroll {
+  cursor: grab;
+  scrollbar-width: none;
+}
+
+.brand-logo-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.brand-logo-scroll.is-dragging {
+  cursor: grabbing;
+}
+
+.brand-logo-scroll a,
+.brand-logo-scroll img {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+@layer components {
+  .admin-table {
+    @apply w-full border-separate border-spacing-0 text-left text-sm;
+  }
+
+  .admin-table thead {
+    @apply bg-slate-50 text-xs uppercase tracking-wide text-slate-500;
+  }
+
+  .admin-table th {
+    @apply px-4 py-3 font-bold;
+  }
+
+  .admin-table td {
+    @apply border-t border-slate-100 px-4 py-3 align-middle text-slate-700;
+  }
+
+  .admin-table tbody tr {
+    @apply transition hover:bg-blue-50/40;
+  }
+
+  @media (max-width: 767px) {
+    .admin-table {
+      display: block;
+      max-width: 100%;
+      width: 100%;
+      overflow-x: auto;
+      white-space: nowrap;
+      scrollbar-width: thin;
+    }
+
+    .admin-table thead,
+    .admin-table tbody {
+      display: table;
+      min-width: 760px;
+      width: 100%;
+    }
+
+    .admin-table th {
+      @apply px-3 py-2 text-[11px];
+    }
+
+    .admin-table td {
+      @apply px-3 py-2 text-xs;
+    }
+
+    .admin-table td * {
+      white-space: normal;
+    }
+  }
+}
