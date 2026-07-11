@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node -e \"const u=new URL(process.env.DATABASE_URL); console.log({host:u.hostname,port:u.port,user:u.username,database:u.pathname,passwordLength:u.password.length})\" && prisma generate && prisma migrate deploy && next build",
+    "build": "prisma generate && prisma migrate deploy && npm run db:seed && next build",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "prisma generate",
