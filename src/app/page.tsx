@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { StorefrontPage } from "@/app/tienda/page";
+import { StorefrontPage } from "@/components/store/storefront-page";
 
 export const dynamic = "force-dynamic";
 
