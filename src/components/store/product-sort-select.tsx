@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Select } from "@/components/ui/input";
 
-export function ProductSortSelect() {
+export function ProductSortSelect({ basePath = "/tienda" }: { basePath?: string }) {
   const router = useRouter();
   const params = useSearchParams();
   return (
@@ -13,7 +13,7 @@ export function ProductSortSelect() {
         const next = new URLSearchParams(params.toString());
         next.set("sort", event.target.value);
         next.delete("page");
-        router.push(`/tienda?${next.toString()}`);
+        router.push(`${basePath}?${next.toString()}`);
       }}
       className="h-10 w-44 rounded-md text-sm shadow-none"
     >

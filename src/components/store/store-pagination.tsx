@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-function pageHref(searchParams: Record<string, string>, page: number) {
+function pageHref(searchParams: Record<string, string>, page: number, basePath: string) {
   const params = new URLSearchParams(searchParams);
   if (page <= 1) {
     params.delete("page");
@@ -10,7 +10,7 @@ function pageHref(searchParams: Record<string, string>, page: number) {
   }
 
   const query = params.toString();
-  return query ? `/tienda?${query}` : "/tienda";
+  return query ? `${basePath}?${query}` : basePath;
 }
 
 function visiblePages(currentPage: number, totalPages: number) {
@@ -22,11 +22,13 @@ function visiblePages(currentPage: number, totalPages: number) {
 export function StorePagination({
   currentPage,
   totalPages,
-  searchParams
+  searchParams,
+  basePath = "/tienda"
 }: {
   currentPage: number;
   totalPages: number;
   searchParams: Record<string, string>;
+  basePath?: string;
 }) {
   if (totalPages <= 1) return null;
 
@@ -37,7 +39,7 @@ export function StorePagination({
   return (
     <nav className="mt-5 flex flex-wrap items-center justify-center gap-2" aria-label="Paginacion de productos">
       <Link
-        href={pageHref(searchParams, previousPage)}
+        href={pageHref(searchParams, previousPage, basePath)}
         aria-disabled={currentPage === 1}
         className={`inline-flex h-10 items-center gap-1 rounded-md border px-3 text-sm font-bold transition ${
           currentPage === 1
@@ -52,7 +54,7 @@ export function StorePagination({
       {pages.map((page) => (
         <Link
           key={page}
-          href={pageHref(searchParams, page)}
+          href={pageHref(searchParams, page, basePath)}
           aria-current={page === currentPage ? "page" : undefined}
           className={`grid h-10 w-10 place-items-center rounded-md border text-sm font-bold transition ${
             page === currentPage
@@ -65,7 +67,7 @@ export function StorePagination({
       ))}
 
       <Link
-        href={pageHref(searchParams, nextPage)}
+        href={pageHref(searchParams, nextPage, basePath)}
         aria-disabled={currentPage === totalPages}
         className={`inline-flex h-10 items-center gap-1 rounded-md border px-3 text-sm font-bold transition ${
           currentPage === totalPages

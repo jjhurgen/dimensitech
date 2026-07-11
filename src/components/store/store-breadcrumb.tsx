@@ -1,9 +1,9 @@
 import Link from "next/link";
 
-export function StoreBreadcrumb({ current }: { current: string }) {
+export function StoreBreadcrumb({ current, basePath = "/tienda" }: { current: string; basePath?: string }) {
   return (
     <nav className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-      <Link href="/tienda" className="hover:text-[#098d8f]">Inicio</Link>
+      <Link href={basePath} className="hover:text-[#098d8f]">Inicio</Link>
       <span>/</span>
       <span>Tecnologia</span>
       <span>/</span>

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { X } from "lucide-react";
 import { StoreFilters, activeFilterChips } from "@/lib/storefront";
 
-export function ActiveFilterChips({ filters }: { filters: StoreFilters }) {
+export function ActiveFilterChips({ filters, basePath = "/tienda" }: { filters: StoreFilters; basePath?: string }) {
   const chips = activeFilterChips(filters);
   if (!chips.length) return null;
   return (
@@ -10,8 +10,10 @@ export function ActiveFilterChips({ filters }: { filters: StoreFilters }) {
       {chips.map((chip) => {
         const params = new URLSearchParams(filters as Record<string, string>);
         params.delete(chip.key);
+        const query = params.toString();
+        const href = query ? `${basePath}?${query}` : basePath;
         return (
-          <Link key={chip.key} href={`/tienda?${params.toString()}`} className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:border-[#098d8f] hover:text-[#098d8f]">
+          <Link key={chip.key} href={href} className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:border-[#098d8f] hover:text-[#098d8f]">
             {chip.label}
             <X className="h-3 w-3" />
           </Link>

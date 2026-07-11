@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { MouseEvent, PointerEvent, useEffect, useRef, useState } from "react";
+import { storeHref } from "@/components/store/store-categories";
 
 const brands = [
   { name: "Apple", slug: "apple", logo: "/uploads/brands/apple_logo.png" },
@@ -15,7 +16,7 @@ const brands = [
 
 const carouselBrands = [...brands, ...brands];
 
-export function BrandCarousel() {
+export function BrandCarousel({ basePath = "/tienda" }: { basePath?: string }) {
   const [failedLogos, setFailedLogos] = useState<Record<string, boolean>>({});
   const scrollerRef = useRef<HTMLDivElement>(null);
   const dragStartXRef = useRef(0);
@@ -148,7 +149,7 @@ export function BrandCarousel() {
             return (
               <Link
                 key={`${brand.slug}-${index}`}
-                href={`/tienda?marca=${brand.slug}`}
+                href={storeHref(`/tienda?marca=${brand.slug}`, basePath)}
                 draggable={false}
                 onDragStart={(event) => event.preventDefault()}
                 onClick={preventClickAfterDrag}

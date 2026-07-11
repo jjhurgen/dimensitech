@@ -24,7 +24,13 @@ export const metadata: Metadata = {
 
 const PRODUCTS_PER_PAGE = 8;
 
-export default async function StorePage({ searchParams }: { searchParams?: Promise<Record<string, string>> }) {
+export async function StorefrontPage({
+  searchParams,
+  basePath = "/tienda"
+}: {
+  searchParams?: Promise<Record<string, string>>;
+  basePath?: string;
+}) {
   const currentSearchParams = (await searchParams) ?? {};
   const filters = { ...currentSearchParams } as StoreFilters;
   if (!filters.search && (filters as any).q) filters.search = (filters as any).q;
@@ -48,9 +54,9 @@ export default async function StorePage({ searchParams }: { searchParams?: Promi
 
   return (
     <main className="min-h-screen bg-[#f6f7f9] text-slate-950">
-      <ClearFiltersOnReload />
-      <StoreHeader search={filters.search} />
-      <StoreCategoryBar />
+      <ClearFiltersOnReload basePath={basePath} />
+      <StoreHeader search={filters.search} basePath={basePath} />
+      <StoreCategoryBar basePath={basePath} />
 
       <div className="mx-auto max-w-7xl space-y-4 px-4 py-4">
         <FeaturedProductsCarousel
@@ -69,7 +75,7 @@ export default async function StorePage({ searchParams }: { searchParams?: Promi
           }))}
         />
 
-        <BrandCarousel />
+        <BrandCarousel basePath={basePath} />
 
         <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="grid gap-4 p-4 md:grid-cols-[1fr_auto] md:items-end">
@@ -80,17 +86,17 @@ export default async function StorePage({ searchParams }: { searchParams?: Promi
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <StoreMobileFiltersDrawer filters={filters} />
+              <StoreMobileFiltersDrawer filters={filters} basePath={basePath} />
               <p className="font-medium text-sm text-slate-500">Ordenar por:</p>
-              <ProductSortSelect />
+              <ProductSortSelect basePath={basePath} />
             </div>
           </div>
           <div className="border-t border-slate-100 px-4 py-3">
-            <ActiveFilterChips filters={filters} />
+            <ActiveFilterChips filters={filters} basePath={basePath} />
           </div>
         </section>
 
-        <StoreBreadcrumb current={title} />
+        <StoreBreadcrumb current={title} basePath={basePath} />
 
         <div className="grid gap-4 lg:grid-cols-[272px_1fr]">
           <aside className="hidden self-start rounded-lg border border-slate-200 bg-white shadow-sm lg:block">
@@ -99,16 +105,20 @@ export default async function StorePage({ searchParams }: { searchParams?: Promi
               <h2 className="text-sm font-black uppercase text-slate-800">Filtros</h2>
             </div>
             <div className="p-4">
-              <StoreFiltersPanel filters={filters} />
+              <StoreFiltersPanel filters={filters} basePath={basePath} />
             </div>
           </aside>
 
           <section>
             <ProductGrid products={paginatedProducts} />
-            <StorePagination currentPage={currentPage} totalPages={totalPages} searchParams={currentSearchParams} />
+            <StorePagination currentPage={currentPage} totalPages={totalPages} searchParams={currentSearchParams} basePath={basePath} />
           </section>
         </div>
       </div>
     </main>
   );
+}
+
+export default async function StorePage({ searchParams }: { searchParams?: Promise<Record<string, string>> }) {
+  return <StorefrontPage searchParams={searchParams} />;
 }

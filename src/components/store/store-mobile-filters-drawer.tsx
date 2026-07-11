@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { StoreFilters } from "@/lib/storefront";
 import { StoreFiltersPanel } from "@/components/store/store-filters";
 
-export function StoreMobileFiltersDrawer({ filters }: { filters: StoreFilters }) {
+export function StoreMobileFiltersDrawer({ filters, basePath = "/tienda" }: { filters: StoreFilters; basePath?: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -24,7 +24,7 @@ export function StoreMobileFiltersDrawer({ filters }: { filters: StoreFilters })
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <StoreFiltersPanel filters={filters} compact />
+            <StoreFiltersPanel filters={filters} compact basePath={basePath} />
           </aside>
         </div>
       ) : null}

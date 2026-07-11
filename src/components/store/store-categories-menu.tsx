@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { ChevronDown, Menu } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { storeCategories } from "@/components/store/store-categories";
+import { storeCategories, storeHref } from "@/components/store/store-categories";
 
-export function StoreCategoriesMenu() {
+export function StoreCategoriesMenu({ basePath = "/tienda" }: { basePath?: string }) {
   const [isActive, setIsActive] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -65,7 +65,7 @@ export function StoreCategoriesMenu() {
           {storeCategories.map(({ icon: Icon, label, href }) => (
             <Link
               key={label}
-              href={href}
+              href={storeHref(href, basePath)}
               role="menuitem"
               onClick={() => setIsOpen(false)}
               className="flex items-center gap-3 border-b border-slate-100 px-4 py-3 text-sm font-bold text-slate-700 last:border-b-0 hover:bg-slate-50 hover:text-[#098d8f]"

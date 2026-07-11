@@ -9,9 +9,9 @@ const colors = ["Negro", "Blanco", "Azul", "Rosado", "Rojo", "Verde", "Titanio n
 const models = ["iPhone 13", "iPhone 14", "iPhone 15", "iPhone 16", "iPhone 17", "Galaxy A56", "Redmi Note 15"];
 const compatibility = ["iPhone 13", "iPhone 14", "iPhone 15", "iPhone 15 Pro Max", "Samsung A56", "Redmi Note 15"];
 
-export function StoreFiltersPanel({ filters, compact = false }: { filters: StoreFilters; compact?: boolean }) {
+export function StoreFiltersPanel({ filters, compact = false, basePath = "/tienda" }: { filters: StoreFilters; compact?: boolean; basePath?: string }) {
   return (
-    <form action="/tienda" className="space-y-4">
+    <form action={basePath} className="space-y-4">
       <input type="hidden" name="search" value={filters.search ?? ""} />
       <FilterBlock title="Categoria">
         <Select name="categoria" defaultValue={filters.categoria ?? ""}>

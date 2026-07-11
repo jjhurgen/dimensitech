@@ -18,3 +18,10 @@ export const storeCategories = [
   { icon: Headphones, label: "Audio", href: "/tienda?tipo=audifono" },
   { icon: Percent, label: "Ofertas", href: "/tienda?sort=ofertas" }
 ] satisfies StoreCategory[];
+
+export function storeHref(href: string, basePath = "/tienda") {
+  const normalizedBase = basePath === "/" ? "/" : basePath.replace(/\/$/, "");
+  if (!href.startsWith("/tienda")) return href;
+  const suffix = href.slice("/tienda".length);
+  return normalizedBase === "/" ? `/${suffix.replace(/^\//, "")}` : `${normalizedBase}${suffix}`;
+}
