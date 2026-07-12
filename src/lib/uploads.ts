@@ -1,6 +1,5 @@
 import { randomUUID } from "crypto";
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
+import { writeUploadFile } from "@/lib/upload-storage";
 
 const allowedImageTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
 const maxImageSize = 10 * 1024 * 1024;
@@ -21,11 +20,8 @@ async function saveImageUpload(file: File, folder: "products" | "banners") {
   const extension = extensionForType(file.type);
   const fileName = `${randomUUID()}.${extension}`;
   const relativePath = `/uploads/${folder}/${fileName}`;
-  const targetDir = path.join(process.cwd(), "public", "uploads", folder);
-  const targetPath = path.join(targetDir, fileName);
 
-  await mkdir(targetDir, { recursive: true });
-  await writeFile(targetPath, Buffer.from(await file.arrayBuffer()));
+  await writeUploadFile(folder, fileName, Buffer.from(await file.arrayBuffer()));
 
   return relativePath;
 }

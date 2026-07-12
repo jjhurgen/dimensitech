@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { MessageCircle, ShieldCheck, ShoppingCart, Truck } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { AddToCartButton } from "@/components/store/add-to-cart-button";
@@ -15,6 +15,7 @@ import { money } from "@/lib/utils";
 import { parseProductId, productSlug, getStoreProducts } from "@/lib/storefront";
 import { expireReservations, productWebStock } from "@/lib/services/reservations";
 import { activePromotionForProduct } from "@/lib/promotions";
+import { absoluteUrl, jsonLdScript, productDescription, productTitle, siteName } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -30,10 +31,45 @@ const paymentMethods = [
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const id = parseProductId(slug);
-  const product = id ? await prisma.productSku.findUnique({ where: { id } }) : null;
+  const product = id ? await prisma.productSku.findUnique({ where: { id }, include: { image: true } }) : null;
+  const title = product ? productTitle([product.brand, product.name, product.storage, product.color]) : "Celulares y accesorios";
+  const canonical = product
+    ? `/tienda/producto/${productSlug({
+        id: product.id,
+        brand: product.brand,
+        name: product.name,
+        color: product.color,
+        storage: product.storage
+      })}`
+    : "/tienda";
+  const description = product
+    ? productDescription({
+        brand: product.brand,
+        name: product.name,
+        color: product.color,
+        storage: product.storage,
+        description: product.shortDescription
+      })
+    : "Consulta stock, precio y compra productos tecnologicos en DimensiTech Store.";
+  const image = product?.image?.imageUrl ? absoluteUrl(product.image.imageUrl) : undefined;
+
   return {
-    title: product ? `${product.brand} ${product.name} | DimensiTech` : "DimensiTech | Celulares y accesorios",
-    description: product?.shortDescription ?? "Consulta stock, precio y compra productos tecnologicos en DIMENSITECH STORE."
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      type: "website",
+      title: `${title} | ${siteName}`,
+      description,
+      url: absoluteUrl(canonical),
+      images: image ? [{ url: image, alt: title }] : undefined
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: image ? [image] : undefined
+    }
   };
 }
 
@@ -65,6 +101,52 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     color: product.color,
     storage: product.storage
   });
+  if (slug !== detailSlug) redirect(`/tienda/producto/${detailSlug}`);
+
+  const productName = productTitle([product.brand, product.name, product.storage, product.color]);
+  const canonicalUrl = absoluteUrl(`/tienda/producto/${detailSlug}`);
+  const productImage = product.image?.imageUrl ? absoluteUrl(product.image.imageUrl) : undefined;
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: productName,
+    description: productDescription({
+      brand: product.brand,
+      name: product.name,
+      color: product.color,
+      storage: product.storage,
+      description: product.shortDescription
+    }),
+    image: productImage ? [productImage] : undefined,
+    sku: product.skuCode,
+    brand: {
+      "@type": "Brand",
+      name: product.brand
+    },
+    url: canonicalUrl,
+    offers: {
+      "@type": "Offer",
+      url: canonicalUrl,
+      priceCurrency: "PEN",
+      price: displayPrice.toFixed(2),
+      availability: stock > 0 || requestOnly ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      itemCondition:
+        product.condition === "USED"
+          ? "https://schema.org/UsedCondition"
+          : product.condition === "REFURBISHED"
+            ? "https://schema.org/RefurbishedCondition"
+            : "https://schema.org/NewCondition"
+    }
+  };
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Tienda", item: absoluteUrl("/tienda") },
+      { "@type": "ListItem", position: 2, name: product.productType.name, item: absoluteUrl(`/tienda?tipo=${encodeURIComponent(product.productType.name.toLowerCase())}`) },
+      { "@type": "ListItem", position: 3, name: productName, item: canonicalUrl }
+    ]
+  };
   const related = (await getStoreProducts({ marca: product.brand })).filter((item) => item.id !== product.id).slice(0, 4);
   const phone = process.env.WHATSAPP_STORE_PHONE ?? "51999999999";
   const message = encodeURIComponent(`Hola DIMENSITECH STORE, deseo consultar este producto:
@@ -95,6 +177,8 @@ Quedo atento a la informacion.`);
 
   return (
     <main className="min-h-screen bg-[#f6f7f9]">
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScript(productJsonLd)} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScript(breadcrumbJsonLd)} />
       <StoreHeader />
       <StoreCategoryBar />
       <div className="mx-auto max-w-7xl space-y-4 px-4 py-4">

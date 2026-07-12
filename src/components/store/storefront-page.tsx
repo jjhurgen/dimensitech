@@ -72,7 +72,6 @@ export async function StorefrontPage({
         <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
           <div className="grid gap-4 p-4 md:grid-cols-[1fr_auto] md:items-end">
             <div>
-              {/* <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 md:text-3xl">{title}</h1> */}
               <p className="mt-1 text-sm font-medium text-slate-500">
                 {products.length ? `Mostrando ${visibleFrom}-${visibleTo} de ${products.length} productos` : "0 productos"}
               </p>
