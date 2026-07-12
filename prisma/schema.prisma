@@ -146,6 +146,8 @@ model User {
   lastLoginAt        DateTime? @map("last_login_at")
   lastLoginIp        String?   @map("last_login_ip") @db.VarChar(45)
   lastLoginUserAgent String?   @map("last_login_user_agent") @db.Text
+  lastLoginCountryCode String? @map("last_login_country_code") @db.VarChar(2)
+  lastLoginCountry     String? @map("last_login_country") @db.VarChar(80)
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
@@ -165,6 +167,8 @@ model UserLoginEvent {
   userId    Int      @map("user_id")
   ipAddress String?  @map("ip_address") @db.VarChar(45)
   userAgent String?  @map("user_agent") @db.Text
+  countryCode String? @map("country_code") @db.VarChar(2)
+  country     String? @db.VarChar(80)
   createdAt DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

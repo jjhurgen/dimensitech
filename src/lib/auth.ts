@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { countryNameFromCode, normalizeCountryCode } from "@/lib/access-audit";
 import { prisma } from "@/lib/prisma";
 
 const cookieName = process.env.AUTH_COOKIE_NAME ?? "dimensitech_session";
@@ -9,13 +10,21 @@ async function loginClientMeta() {
   const requestHeaders = await headers();
   const forwardedFor = requestHeaders.get("x-forwarded-for")?.split(",")[0]?.trim();
   const ipAddress =
-    forwardedFor ||
-    requestHeaders.get("x-real-ip") ||
     requestHeaders.get("cf-connecting-ip") ||
     requestHeaders.get("true-client-ip") ||
+    requestHeaders.get("x-real-ip") ||
+    forwardedFor ||
     "local";
   const userAgent = requestHeaders.get("user-agent")?.slice(0, 1000) || "Desconocido";
-  return { ipAddress, userAgent };
+  const countryCode = normalizeCountryCode(
+    requestHeaders.get("cf-ipcountry") ||
+      requestHeaders.get("x-vercel-ip-country") ||
+      requestHeaders.get("cloudfront-viewer-country") ||
+      requestHeaders.get("x-appengine-country") ||
+      requestHeaders.get("x-country-code")
+  );
+  const country = countryNameFromCode(countryCode);
+  return { ipAddress, userAgent, countryCode, country };
 }
 
 export async function login(identifier: string, password: string) {
@@ -32,15 +41,15 @@ export async function login(identifier: string, password: string) {
   const ok = await bcrypt.compare(password, user.password);
   if (!ok) return null;
 
-  const { ipAddress, userAgent } = await loginClientMeta();
+  const { ipAddress, userAgent, countryCode, country } = await loginClientMeta();
   const lastLoginAt = new Date();
   await prisma.$transaction([
     prisma.user.update({
       where: { id: user.id },
-      data: { lastLoginAt, lastLoginIp: ipAddress, lastLoginUserAgent: userAgent }
+      data: { lastLoginAt, lastLoginIp: ipAddress, lastLoginUserAgent: userAgent, lastLoginCountryCode: countryCode, lastLoginCountry: country }
     }),
     prisma.userLoginEvent.create({
-      data: { userId: user.id, ipAddress, userAgent }
+      data: { userId: user.id, ipAddress, userAgent, countryCode, country }
     })
   ]);
 

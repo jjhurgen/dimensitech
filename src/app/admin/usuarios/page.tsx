@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Select } from "@/components/ui/input";
+import { accessClientLabel, accessCountryLabel, formatAccessDateTime } from "@/lib/access-audit";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createUserAction, resetUserPasswordAction, toggleUserAction, updateUserAction } from "./actions";
@@ -13,12 +14,11 @@ function dateValue(date?: Date | null) {
 }
 
 function dateTimeValue(date?: Date | null) {
-  return date ? date.toLocaleString("es-PE") : "Sin ingresos";
+  return formatAccessDateTime(date);
 }
 
 function shortUserAgent(userAgent?: string | null) {
-  if (!userAgent) return "Desconocido";
-  return userAgent.length > 90 ? `${userAgent.slice(0, 90)}...` : userAgent;
+  return accessClientLabel(userAgent);
 }
 
 export default async function UsersPage() {
@@ -86,6 +86,7 @@ export default async function UsersPage() {
                 <td className="min-w-72">
                   <p className="font-bold text-slate-950">{dateTimeValue(user.lastLoginAt)}</p>
                   <p className="text-xs text-slate-500">IP: {user.lastLoginIp ?? "-"}</p>
+                  <p className="text-xs text-slate-500">Pais: {accessCountryLabel(user.lastLoginCountry, user.lastLoginCountryCode)}</p>
                   <p className="max-w-sm truncate text-xs text-slate-500" title={user.lastLoginUserAgent ?? undefined}>
                     {shortUserAgent(user.lastLoginUserAgent)}
                   </p>
@@ -97,6 +98,7 @@ export default async function UsersPage() {
                           <div key={event.id} className="border-b border-slate-200 pb-2 last:border-b-0 last:pb-0">
                             <p className="text-xs font-bold text-slate-800">{dateTimeValue(event.createdAt)}</p>
                             <p className="text-xs text-slate-500">IP: {event.ipAddress ?? "-"}</p>
+                            <p className="text-xs text-slate-500">Pais: {accessCountryLabel(event.country, event.countryCode)}</p>
                             <p className="text-xs text-slate-500" title={event.userAgent ?? undefined}>{shortUserAgent(event.userAgent)}</p>
                           </div>
                         ))}
