@@ -11,7 +11,7 @@ import { StoreFiltersPanel } from "@/components/store/store-filters";
 import { StoreHeader } from "@/components/store/store-header";
 import { StoreMobileFiltersDrawer } from "@/components/store/store-mobile-filters-drawer";
 import { SlidersHorizontal } from "lucide-react";
-import { StoreFilters, getFeaturedStoreProducts, getStoreProducts, productSlug, titleForFilters } from "@/lib/storefront";
+import { StoreFilters, getFeaturedStoreProducts, getStoreCampaignFilters, getStoreProducts, productSlug, titleForFilters } from "@/lib/storefront";
 import { prisma } from "@/lib/prisma";
 
 const PRODUCTS_PER_PAGE = 8;
@@ -35,14 +35,25 @@ export async function StorefrontPage({
   const visibleFrom = products.length ? pageStart + 1 : 0;
   const visibleTo = Math.min(pageStart + PRODUCTS_PER_PAGE, products.length);
   const featured = await getFeaturedStoreProducts(products);
+  const campaignFilters = await getStoreCampaignFilters();
   const now = new Date();
   const banners = await prisma.promotionBanner.findMany({
-    where: { isActive: true, deletedAt: null, startsAt: { lte: now }, endsAt: { gte: now } },
-    include: { productSku: true },
+    where: {
+      isActive: true,
+      deletedAt: null,
+      startsAt: { lte: now },
+      endsAt: { gte: now },
+      OR: [
+        { campaignId: null },
+        { campaign: { isActive: true, startsAt: { lte: now }, endsAt: { gte: now } } }
+      ]
+    },
+    include: { productSku: true, campaign: true },
     orderBy: [{ sortOrder: "asc" }, { id: "desc" }],
     take: 8
   });
-  const title = titleForFilters(filters);
+  const selectedCampaign = campaignFilters.find((campaign) => String(campaign.id) === String(filters.campana));
+  const title = selectedCampaign?.name ?? titleForFilters(filters);
 
   return (
     <main className="min-h-screen bg-[#f6f7f9] text-slate-950">
@@ -57,13 +68,17 @@ export async function StorefrontPage({
             id: banner.id,
             title: banner.title,
             imageUrl: banner.imageUrl,
-            href: `/tienda/producto/${productSlug({
-              id: banner.productSku.id,
-              brand: banner.productSku.brand,
-              name: banner.productSku.name,
-              color: banner.productSku.color,
-              storage: banner.productSku.storage
-            })}`
+            href: banner.campaignId
+              ? `/tienda?campana=${banner.campaignId}`
+              : banner.productSku
+                ? `/tienda/producto/${productSlug({
+                    id: banner.productSku.id,
+                    brand: banner.productSku.brand,
+                    name: banner.productSku.name,
+                    color: banner.productSku.color,
+                    storage: banner.productSku.storage
+                  })}`
+                : "/tienda"
           }))}
         />
 
@@ -77,13 +92,13 @@ export async function StorefrontPage({
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <StoreMobileFiltersDrawer filters={filters} basePath={basePath} />
+              <StoreMobileFiltersDrawer filters={filters} campaigns={campaignFilters} basePath={basePath} />
               <p className="font-medium text-sm text-slate-500">Ordenar por:</p>
               <ProductSortSelect basePath={basePath} />
             </div>
           </div>
           <div className="border-t border-slate-100 px-4 py-3">
-            <ActiveFilterChips filters={filters} basePath={basePath} />
+            <ActiveFilterChips filters={filters} campaigns={campaignFilters} basePath={basePath} />
           </div>
         </section>
 
@@ -96,7 +111,7 @@ export async function StorefrontPage({
               <h2 className="text-sm font-black uppercase text-slate-800">Filtros</h2>
             </div>
             <div className="p-4">
-              <StoreFiltersPanel filters={filters} basePath={basePath} />
+              <StoreFiltersPanel filters={filters} campaigns={campaignFilters} basePath={basePath} />
             </div>
           </aside>
 

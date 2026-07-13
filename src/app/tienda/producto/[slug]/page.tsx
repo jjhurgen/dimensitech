@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { MessageCircle, ShieldCheck, ShoppingCart, Truck } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { AddToCartButton } from "@/components/store/add-to-cart-button";
+import { ColorVariantLinks } from "@/components/store/color-variant-links";
 import { ProductGrid } from "@/components/store/product-grid";
 import { StoreCategoryBar } from "@/components/store/store-category-bar";
 import { StoreHeader } from "@/components/store/store-header";
@@ -14,7 +15,7 @@ import { prisma } from "@/lib/prisma";
 import { money } from "@/lib/utils";
 import { parseProductId, productSlug, getStoreProducts } from "@/lib/storefront";
 import { expireReservations, productWebStock } from "@/lib/services/reservations";
-import { activePromotionForProduct } from "@/lib/promotions";
+import { activePromotionForProduct, activePromotionsForProducts } from "@/lib/promotions";
 import { absoluteUrl, jsonLdScript, productDescription, productTitle, siteName } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
@@ -147,7 +148,47 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       { "@type": "ListItem", position: 3, name: productName, item: canonicalUrl }
     ]
   };
-  const related = (await getStoreProducts({ marca: product.brand })).filter((item) => item.id !== product.id).slice(0, 4);
+  const variantModelWhere = product.commercialModel
+    ? { commercialModel: product.commercialModel }
+    : { commercialModel: null, name: product.name };
+  const variantRows = await prisma.productSku.findMany({
+    where: {
+      visibleInStore: true,
+      status: "ACTIVE",
+      productTypeId: product.productTypeId,
+      brand: product.brand,
+      ...variantModelWhere,
+      storage: product.storage,
+      ram: product.ram,
+      condition: product.condition,
+      platform: product.platform
+    },
+    orderBy: [{ color: "asc" }, { id: "asc" }]
+  });
+  const variantPromotions = await activePromotionsForProducts(variantRows.map((row) => row.id));
+  const colorVariants = await Promise.all(
+    variantRows.map(async (row) => {
+      const variantStock = await productWebStock(row.id);
+      const variantPromotion = variantPromotions.get(row.id);
+      const variantPrice = variantPromotion?.finalPrice ?? Number(row.suggestedSalePrice);
+      return {
+        id: row.id,
+        slug: productSlug({
+          id: row.id,
+          brand: row.brand,
+          name: row.name,
+          color: row.color,
+          storage: row.storage
+        }),
+        color: row.color,
+        price: variantPrice,
+        stock: variantStock,
+        isRequestOnly: variantStock <= 0 && row.availableOnRequest
+      };
+    })
+  );
+  const variantIds = new Set(variantRows.map((row) => row.id));
+  const related = (await getStoreProducts({ marca: product.brand })).filter((item) => !variantIds.has(item.id)).slice(0, 4);
   const phone = process.env.WHATSAPP_STORE_PHONE ?? "51999999999";
   const message = encodeURIComponent(`Hola DIMENSITECH STORE, deseo consultar este producto:
 
@@ -206,6 +247,13 @@ Quedo atento a la informacion.`);
             <p className="text-xs font-black uppercase text-slate-500">{product.brand}</p>
             <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-950 md:text-3xl">{product.name}</h1>
             <p className="mt-2 text-sm font-medium text-slate-500">{product.color} {product.storage} {product.ram}</p>
+            {colorVariants.length > 1 ? (
+              <div className="mt-4 rounded-lg border border-slate-200 bg-white p-3">
+                <p className="mb-2 text-xs font-black uppercase text-slate-500">Colores disponibles</p>
+                <ColorVariantLinks variants={colorVariants} currentId={product.id} size="md" />
+                <p className="mt-2 text-xs font-semibold text-slate-500">Seleccionado: {product.color ?? "Color no especificado"}</p>
+              </div>
+            ) : null}
             <div className="mt-5 border-y border-slate-100 py-4">
               <p className="text-xs font-bold uppercase text-slate-500">Precio online</p>
               {promotion ? <p className="mt-1 text-sm font-bold text-slate-400 line-through">{money(basePrice)}</p> : null}

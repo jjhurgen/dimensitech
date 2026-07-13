@@ -61,6 +61,7 @@ export function FeaturedProductsCarousel({ products, banners = [] }: { products:
   const dragOffsetRef = useRef(0);
   const dragPreventClickRef = useRef(false);
   const pointerDownRef = useRef(false);
+  const pointerCapturedRef = useRef(false);
   const showControls = slides.length > 1;
   const goToPrevious = () => setActiveIndex((index) => (index === 0 ? slides.length - 1 : index - 1));
   const goToNext = () => setActiveIndex((index) => (index === slides.length - 1 ? 0 : index + 1));
@@ -68,13 +69,12 @@ export function FeaturedProductsCarousel({ products, banners = [] }: { products:
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (!showControls || (event.target as HTMLElement).closest("button")) return;
     if (event.pointerType === "mouse" && event.button !== 0) return;
-    event.preventDefault();
     pointerDownRef.current = true;
     dragStartXRef.current = event.clientX;
     dragOffsetRef.current = 0;
     dragPreventClickRef.current = false;
+    pointerCapturedRef.current = false;
     setIsPaused(true);
-    event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
@@ -85,6 +85,10 @@ export function FeaturedProductsCarousel({ products, banners = [] }: { products:
       event.preventDefault();
       dragPreventClickRef.current = true;
       setIsDragging(true);
+      if (!pointerCapturedRef.current) {
+        event.currentTarget.setPointerCapture(event.pointerId);
+        pointerCapturedRef.current = true;
+      }
     }
     setDragOffset(nextOffset);
   };
@@ -107,7 +111,10 @@ export function FeaturedProductsCarousel({ products, banners = [] }: { products:
     dragOffsetRef.current = 0;
     setDragOffset(0);
     setIsDragging(false);
-    event.currentTarget.releasePointerCapture(event.pointerId);
+    if (pointerCapturedRef.current && event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    pointerCapturedRef.current = false;
     window.setTimeout(() => {
       dragPreventClickRef.current = false;
     }, 80);
@@ -137,7 +144,7 @@ export function FeaturedProductsCarousel({ products, banners = [] }: { products:
     <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm" onMouseEnter={() => setIsPaused(true)} onMouseLeave={() => setIsPaused(false)}>
       <div
         ref={viewportRef}
-        className={`relative touch-pan-y overflow-hidden ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+        className={`relative touch-pan-y overflow-hidden ${isDragging ? "cursor-grabbing" : ""}`}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={finishDrag}
@@ -150,11 +157,11 @@ export function FeaturedProductsCarousel({ products, banners = [] }: { products:
           {slides.map((slide, index) => (
             <div key={`${slide.type}-${slide.id}`} className="min-w-full">
               {slide.type === "banner" ? (
-                <Link href={slide.href} draggable={false} onDragStart={(event) => event.preventDefault()} onClick={preventClickAfterDrag} className="relative block aspect-[1246/420] w-full select-none overflow-hidden bg-white">
+                <Link href={slide.href} draggable={false} onDragStart={(event) => event.preventDefault()} onClick={preventClickAfterDrag} className="relative block aspect-[1246/420] w-full cursor-pointer select-none overflow-hidden bg-white">
                   <Image draggable={false} src={slide.imageUrl} alt={slide.title} fill sizes="(min-width: 1280px) 1280px, 100vw" className="select-none object-contain" priority={index === 0} />
                 </Link>
               ) : (
-                <Link href={slide.href} draggable={false} onDragStart={(event) => event.preventDefault()} onClick={preventClickAfterDrag} className="grid min-h-72 w-full select-none overflow-hidden bg-[#003f48] text-white sm:min-h-80 md:grid-cols-[1fr_260px] lg:min-h-96 xl:min-h-[420px]">
+                <Link href={slide.href} draggable={false} onDragStart={(event) => event.preventDefault()} onClick={preventClickAfterDrag} className="grid min-h-72 w-full cursor-pointer select-none overflow-hidden bg-[#003f48] text-white sm:min-h-80 md:grid-cols-[1fr_260px] lg:min-h-96 xl:min-h-[420px]">
                   <div className="p-6 md:p-8">
                     <span className={discountBadgeClass(slide.product.discountBadgeColor)}>{slide.product.discountBadge}</span>
                     <p className="mt-5 text-xs font-black uppercase text-white/70">{slide.product.brand}</p>

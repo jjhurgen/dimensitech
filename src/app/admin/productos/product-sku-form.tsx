@@ -6,6 +6,7 @@ import { CheckboxField, Field, ModalActions, ModalFormGrid, ModalSection } from 
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import { productConditionOptions } from "@/lib/product-condition";
+import { ColorCombobox } from "./color-combobox";
 
 type TypeOption = { id: number; name: string; requiresImei: boolean };
 type ImageOption = { id: number; productName: string; brand: string | null; color: string | null };
@@ -49,7 +50,7 @@ export function ProductSkuForm({
             <Input name="name" placeholder={isPhone ? "iPhone 15 Pro Max" : "Cubo Apple 20W"} required defaultValue={product?.name ?? ""} />
           </Field>
           <Field label="Color">
-            <Input name="color" placeholder="Azul, negro, transparente" defaultValue={product?.color ?? ""} />
+            <ColorCombobox defaultValue={product?.color ?? ""} />
           </Field>
           <Field label="Imagen de biblioteca">
             <Select name="imageId" defaultValue={product?.imageId ?? ""}>

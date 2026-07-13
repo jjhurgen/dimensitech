@@ -36,12 +36,23 @@ export type StoreProduct = {
   badge: string;
   isValidated: boolean;
   updatedAt: string;
+  colorVariants: StoreProductColorVariant[];
+};
+
+export type StoreProductColorVariant = {
+  id: number;
+  slug: string;
+  color: string | null;
+  price: number;
+  stock: number;
+  isRequestOnly: boolean;
 };
 
 export type StoreFilters = {
   search?: string;
   categoria?: string;
   tipo?: string;
+  campana?: string;
   marca?: string;
   plataforma?: string;
   modelo?: string;
@@ -55,6 +66,11 @@ export type StoreFilters = {
   min?: string;
   max?: string;
   sort?: string;
+};
+
+export type StoreCampaignFilterOption = {
+  id: number;
+  name: string;
 };
 
 const categoryTypeMap: Record<string, string[]> = {
@@ -85,6 +101,7 @@ export function parseProductId(slug: string) {
 
 export function titleForFilters(filters: StoreFilters) {
   const brand = filters.marca ? capitalize(filters.marca) : "";
+  if (filters.campana) return "Productos en campana";
   if (filters.tipo === "case") return brand ? `Cases para ${brand}` : "Cases disponibles";
   if (filters.categoria === "accesorios") return "Accesorios disponibles";
   if (filters.categoria === "celulares" || filters.plataforma) {
@@ -95,13 +112,17 @@ export function titleForFilters(filters: StoreFilters) {
   return "Celulares y accesorios";
 }
 
-export function activeFilterChips(filters: StoreFilters) {
+export function activeFilterChips(filters: StoreFilters, campaigns: StoreCampaignFilterOption[] = []) {
+  const campaignLabels = new Map(campaigns.map((campaign) => [String(campaign.id), campaign.name]));
+
   return Object.entries(filters)
     .filter(([key, value]) => value && !["sort", "page"].includes(key))
     .map(([key, value]) => ({
       key,
       label: key === "min" || key === "max"
         ? `S/ ${value}`
+        : key === "campana"
+          ? campaignLabels.get(String(value)) ?? `Campana ${value}`
         : key === "condicion"
           ? productConditionLabel(String(value))
           : capitalize(String(value))
@@ -116,12 +137,61 @@ function conditionFilter(value?: string): ProductCondition | undefined {
   return value && ["NEW_SEALED", "REFURBISHED", "OPEN_BOX", "USED"].includes(value) ? value as ProductCondition : undefined;
 }
 
+function productGroupKey(product: StoreProduct) {
+  return [
+    product.productType,
+    product.brand,
+    product.commercialModel || product.name,
+    product.storage || "",
+    product.ram || "",
+    product.condition,
+    product.platform || ""
+  ].map((value) => value.toLowerCase().trim()).join("|");
+}
+
+function groupProductsByColor(products: StoreProduct[]) {
+  const groups = new Map<string, StoreProduct[]>();
+  const order: string[] = [];
+
+  for (const product of products) {
+    const key = productGroupKey(product);
+    if (!groups.has(key)) {
+      groups.set(key, []);
+      order.push(key);
+    }
+    groups.get(key)!.push(product);
+  }
+
+  return order.map((key) => {
+    const group = groups.get(key)!;
+    const representative = group[0];
+    const variants = group
+      .map((product) => ({
+        id: product.id,
+        slug: product.slug,
+        color: product.color,
+        price: product.price,
+        stock: product.stock,
+        isRequestOnly: product.isRequestOnly
+      }))
+      .sort((a, b) => {
+        if (a.id === representative.id) return -1;
+        if (b.id === representative.id) return 1;
+        return (a.color ?? "").localeCompare(b.color ?? "", "es");
+      });
+
+    return { ...representative, colorVariants: variants };
+  });
+}
+
 export async function getStoreProducts(filters: StoreFilters) {
   await expireReservations();
 
   const search = filters.search ?? "";
   const min = Number(filters.min || 0);
   const max = Number(filters.max || 0);
+  const campaignId = Number(filters.campana || 0);
+  const now = new Date();
   const typeNames = filters.tipo
     ? categoryTypeMap[`${filters.tipo}s`] ?? [capitalize(filters.tipo)]
     : filters.categoria
@@ -132,6 +202,9 @@ export async function getStoreProducts(filters: StoreFilters) {
     visibleInStore: true,
     status: "ACTIVE",
     productType: typeNames ? { name: { in: typeNames } } : undefined,
+    discountProducts: campaignId
+      ? { some: { campaign: { id: campaignId, isActive: true, startsAt: { lte: now }, endsAt: { gte: now } } } }
+      : undefined,
     brand: filters.marca ? { contains: filters.marca } : undefined,
     platform: filters.plataforma === "IPHONE" || filters.plataforma === "ANDROID" ? filters.plataforma : undefined,
     commercialModel: filters.modelo ? { contains: filters.modelo } : undefined,
@@ -206,7 +279,8 @@ export async function getStoreProducts(filters: StoreFilters) {
         statusLabel: isRequestOnly ? requestLabel : stock <= 0 ? "Sin stock" : stock <= 2 ? "Ultimas unidades" : "Disponible",
         badge: isRequestOnly ? "A pedido" : stock <= 0 ? "Sin stock" : stock <= 2 ? "Ultimas unidades" : isPhone ? "Nuevo" : "Stock real",
         isValidated: isPhone && stock > 0,
-        updatedAt: row.updatedAt.toISOString()
+        updatedAt: row.updatedAt.toISOString(),
+        colorVariants: []
       };
       product.slug = productSlug(product);
       return product;
@@ -222,15 +296,31 @@ export async function getStoreProducts(filters: StoreFilters) {
     return true;
   });
 
-  return filtered.sort((a, b) => {
+  const sorted = filtered.sort((a, b) => {
     if (filters.sort === "menor-precio") return a.price - b.price;
     if (filters.sort === "mayor-precio") return b.price - a.price;
     if (filters.sort === "mayor-stock") return b.stock - a.stock;
     if (filters.sort === "ultimas") return (a.stock || 999) - (b.stock || 999);
     return 0;
   });
+
+  return groupProductsByColor(sorted);
 }
 
 export async function getFeaturedStoreProducts(products: StoreProduct[]) {
   return products.filter((product) => product.stock > 0).slice(0, 10);
+}
+
+export async function getStoreCampaignFilters(): Promise<StoreCampaignFilterOption[]> {
+  const now = new Date();
+  return prisma.discountCampaign.findMany({
+    where: {
+      isActive: true,
+      startsAt: { lte: now },
+      endsAt: { gte: now },
+      products: { some: {} }
+    },
+    select: { id: true, name: true },
+    orderBy: [{ startsAt: "desc" }, { id: "desc" }]
+  });
 }

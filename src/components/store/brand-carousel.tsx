@@ -23,6 +23,7 @@ export function BrandCarousel({ basePath = "/tienda" }: { basePath?: string }) {
   const dragStartScrollRef = useRef(0);
   const dragPreventClickRef = useRef(false);
   const pointerDownRef = useRef(false);
+  const pointerCapturedRef = useRef(false);
   const touchResumeTimerRef = useRef<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -48,13 +49,12 @@ export function BrandCarousel({ basePath = "/tienda" }: { basePath?: string }) {
       setIsPaused(true);
       return;
     }
-    event.preventDefault();
     pointerDownRef.current = true;
     dragStartXRef.current = event.clientX;
     dragStartScrollRef.current = scroller.scrollLeft;
     dragPreventClickRef.current = false;
+    pointerCapturedRef.current = false;
     setIsPaused(true);
-    event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
@@ -65,6 +65,10 @@ export function BrandCarousel({ basePath = "/tienda" }: { basePath?: string }) {
       event.preventDefault();
       dragPreventClickRef.current = true;
       setIsDragging(true);
+      if (!pointerCapturedRef.current) {
+        event.currentTarget.setPointerCapture(event.pointerId);
+        pointerCapturedRef.current = true;
+      }
     }
     scroller.scrollLeft = dragStartScrollRef.current - delta;
   };
@@ -75,7 +79,10 @@ export function BrandCarousel({ basePath = "/tienda" }: { basePath?: string }) {
     normalizeScroll();
     setIsDragging(false);
     setIsPaused(false);
-    event.currentTarget.releasePointerCapture(event.pointerId);
+    if (pointerCapturedRef.current && event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    pointerCapturedRef.current = false;
     window.setTimeout(() => {
       dragPreventClickRef.current = false;
     }, 80);
@@ -153,7 +160,7 @@ export function BrandCarousel({ basePath = "/tienda" }: { basePath?: string }) {
                 draggable={false}
                 onDragStart={(event) => event.preventDefault()}
                 onClick={preventClickAfterDrag}
-                className="flex h-24 w-48 flex-none select-none items-center justify-center rounded-md border border-slate-200 bg-white px-4 py-3 transition hover:border-[#098d8f] hover:shadow-md"
+                className="flex h-24 w-48 flex-none cursor-pointer select-none items-center justify-center rounded-md border border-slate-200 bg-white px-4 py-3 transition hover:border-[#098d8f] hover:shadow-md"
                 aria-label={`Ver productos ${brand.name}`}
               >
                 {!logoFailed ? (

@@ -22,13 +22,20 @@ function discountText(type: string, value: number) {
 }
 
 function dateTimeValue(date: Date) {
-  return date.toISOString().slice(0, 16);
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return localDate.toISOString().slice(0, 16);
 }
 
 export default async function DiscountsPage() {
   const [products, campaigns] = await Promise.all([
     prisma.productSku.findMany({ include: { productType: true }, orderBy: [{ productType: { name: "asc" } }, { brand: "asc" }, { name: "asc" }] }),
-    prisma.discountCampaign.findMany({ include: { products: { include: { productSku: true } } }, orderBy: { id: "desc" } })
+    prisma.discountCampaign.findMany({
+      include: {
+        products: { include: { productSku: true } },
+        banners: { where: { deletedAt: null }, select: { id: true }, take: 1 }
+      },
+      orderBy: { id: "desc" }
+    })
   ]);
 
   return (
@@ -101,6 +108,7 @@ export default async function DiscountsPage() {
               const status = campaignStatus(campaign.startsAt, campaign.endsAt, campaign.isActive);
               const selectedIds = new Set(campaign.products.map((item) => item.productSkuId));
               const currentValue = campaign.products[0] ? Number(campaign.products[0].value) : 0;
+              const isLinkedToBanner = campaign.banners.length > 0;
 
               return (
                 <tr key={campaign.id}>
@@ -121,7 +129,9 @@ export default async function DiscountsPage() {
                         <summary className="cursor-pointer rounded-md border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Editar</summary>
                         <form action={updateDiscountCampaignAction} className="mt-3 grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
                           <input type="hidden" name="campaignId" value={campaign.id} />
-                          <Input name="name" defaultValue={campaign.name} required />
+                          {isLinkedToBanner ? <input type="hidden" name="name" value={campaign.name} /> : null}
+                          <Input name="name" defaultValue={campaign.name} required disabled={isLinkedToBanner} />
+                          {isLinkedToBanner ? <p className="text-xs font-semibold text-slate-500">El nombre no se puede editar porque esta campana esta asociada a un banner.</p> : null}
                           <Input name="badgeLabel" defaultValue={campaign.badgeLabel} required />
                           <BadgeColorPicker name="badgeColor" defaultValue={campaign.badgeColor || defaultDiscountBadgeColor} compact />
                           <div className="grid gap-2 sm:grid-cols-2">

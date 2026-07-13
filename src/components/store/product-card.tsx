@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart, Truck } from "lucide-react";
 import { AddToCartButton } from "@/components/store/add-to-cart-button";
+import { ColorVariantLinks } from "@/components/store/color-variant-links";
 import { discountBadgeClass } from "@/lib/discount-badge-colors";
 import { StoreProduct } from "@/lib/storefront";
 import { money } from "@/lib/utils";
@@ -11,6 +12,7 @@ import { money } from "@/lib/utils";
 export function ProductCard({ product, compact = false }: { product: StoreProduct; compact?: boolean }) {
   const requestOnly = product.isRequestOnly;
   const out = product.stock <= 0 && !requestOnly;
+  const hasColorVariants = product.colorVariants.length > 1;
   const requestLabel = product.requestDeliveryDays
     ? `Llega en ${product.requestDeliveryDays} dia${product.requestDeliveryDays === 1 ? "" : "s"}`
     : "A pedido";
@@ -64,8 +66,14 @@ export function ProductCard({ product, compact = false }: { product: StoreProduc
         <div>
           <p className="text-xs font-black uppercase text-slate-500">{product.brand}</p>
           <Link href={`/tienda/producto/${product.slug}`} className={`mt-1 line-clamp-2 font-semibold text-slate-900 hover:text-[#098d8f] ${compact ? "min-h-8 text-xs leading-4" : "min-h-9 text-xs leading-4 sm:min-h-10 sm:text-sm sm:leading-5"}`}>
-            {product.name} {product.storage} {product.color}
+            {product.name} {product.storage} {hasColorVariants ? "" : product.color}
           </Link>
+          {hasColorVariants ? (
+            <div className="mt-2 space-y-1">
+              <ColorVariantLinks variants={product.colorVariants} currentId={product.id} />
+              <p className="text-[11px] font-semibold text-slate-500">{product.color ?? "Color seleccionado"}</p>
+            </div>
+          ) : null}
         </div>
 
         <div className="mt-2">

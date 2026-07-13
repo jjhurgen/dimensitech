@@ -346,7 +346,7 @@ model PromotionBanner {
   id           Int       @id @default(autoincrement())
   title        String
   imageUrl     String    @map("image_url")
-  productSkuId Int       @map("product_sku_id")
+  productSkuId Int?      @map("product_sku_id")
   campaignId   Int?      @map("campaign_id")
   createdById  Int?      @map("created_by_id")
   deletedById  Int?      @map("deleted_by_id")
@@ -358,7 +358,7 @@ model PromotionBanner {
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
-  productSku ProductSku        @relation(fields: [productSkuId], references: [id], onDelete: Cascade)
+  productSku ProductSku?       @relation(fields: [productSkuId], references: [id], onDelete: Cascade)
   campaign   DiscountCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
   createdBy  User?             @relation("PromotionBannerCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   deletedBy  User?             @relation("PromotionBannerDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)

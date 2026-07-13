@@ -2,14 +2,24 @@ import { SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { productConditionOptions } from "@/lib/product-condition";
-import { StoreFilters } from "@/lib/storefront";
+import { StoreCampaignFilterOption, StoreFilters } from "@/lib/storefront";
 
 const brands = ["Apple", "Samsung", "Xiaomi", "Redmi", "Honor", "Infinix", "Motorola", "Otros"];
 const colors = ["Negro", "Blanco", "Azul", "Rosado", "Rojo", "Verde", "Titanio natural", "Titanio azul", "Gris", "Dorado", "Otro"];
 const models = ["iPhone 13", "iPhone 14", "iPhone 15", "iPhone 16", "iPhone 17", "Galaxy A56", "Redmi Note 15"];
 const compatibility = ["iPhone 13", "iPhone 14", "iPhone 15", "iPhone 15 Pro Max", "Samsung A56", "Redmi Note 15"];
 
-export function StoreFiltersPanel({ filters, compact = false, basePath = "/tienda" }: { filters: StoreFilters; compact?: boolean; basePath?: string }) {
+export function StoreFiltersPanel({
+  filters,
+  campaigns = [],
+  compact = false,
+  basePath = "/tienda"
+}: {
+  filters: StoreFilters;
+  campaigns?: StoreCampaignFilterOption[];
+  compact?: boolean;
+  basePath?: string;
+}) {
   return (
     <form action={basePath} className="space-y-4">
       <input type="hidden" name="search" value={filters.search ?? ""} />
@@ -27,6 +37,17 @@ export function StoreFiltersPanel({ filters, compact = false, basePath = "/tiend
           <option value="mica">Micas</option>
           <option value="audifono">Audifonos</option>
           <option value="cargador">Cargadores</option>
+        </Select>
+      </FilterBlock>
+
+      <FilterBlock title="Campanas">
+        <Select name="campana" defaultValue={filters.campana ?? ""}>
+          <option value="">Todas las campanas</option>
+          {campaigns.map((campaign) => (
+            <option key={campaign.id} value={campaign.id}>
+              {campaign.name}
+            </option>
+          ))}
         </Select>
       </FilterBlock>
 

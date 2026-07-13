@@ -3,10 +3,18 @@
 import { useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { StoreFilters } from "@/lib/storefront";
+import { StoreCampaignFilterOption, StoreFilters } from "@/lib/storefront";
 import { StoreFiltersPanel } from "@/components/store/store-filters";
 
-export function StoreMobileFiltersDrawer({ filters, basePath = "/tienda" }: { filters: StoreFilters; basePath?: string }) {
+export function StoreMobileFiltersDrawer({
+  filters,
+  campaigns = [],
+  basePath = "/tienda"
+}: {
+  filters: StoreFilters;
+  campaigns?: StoreCampaignFilterOption[];
+  basePath?: string;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -24,7 +32,7 @@ export function StoreMobileFiltersDrawer({ filters, basePath = "/tienda" }: { fi
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <StoreFiltersPanel filters={filters} compact basePath={basePath} />
+            <StoreFiltersPanel filters={filters} campaigns={campaigns} compact basePath={basePath} />
           </aside>
         </div>
       ) : null}

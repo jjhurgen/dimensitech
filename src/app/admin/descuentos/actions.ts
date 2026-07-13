@@ -41,7 +41,9 @@ export async function createDiscountCampaignAction(formData: FormData) {
   });
 
   revalidatePath("/admin/descuentos");
+  revalidatePath("/admin/banners");
   revalidatePath("/tienda");
+  revalidatePath("/");
   redirect("/admin/descuentos");
 }
 
@@ -49,9 +51,14 @@ export async function toggleDiscountCampaignAction(formData: FormData) {
   await requireUser();
   const id = Number(formData.get("campaignId"));
   const isActive = String(formData.get("isActive")) === "true";
-  await prisma.discountCampaign.update({ where: { id }, data: { isActive } });
+  await prisma.$transaction([
+    prisma.discountCampaign.update({ where: { id }, data: { isActive } }),
+    prisma.promotionBanner.updateMany({ where: { campaignId: id, deletedAt: null }, data: { isActive } })
+  ]);
   revalidatePath("/admin/descuentos");
+  revalidatePath("/admin/banners");
   revalidatePath("/tienda");
+  revalidatePath("/");
   redirect("/admin/descuentos");
 }
 
@@ -74,17 +81,33 @@ export async function updateDiscountCampaignAction(formData: FormData) {
   if (!productIds.length) throw new Error("Seleccione al menos un producto");
 
   await prisma.$transaction(async (tx) => {
+    const currentCampaign = await tx.discountCampaign.findUnique({
+      where: { id },
+      select: {
+        name: true,
+        banners: { where: { deletedAt: null }, select: { id: true }, take: 1 }
+      }
+    });
+    if (!currentCampaign) throw new Error("La campana no existe");
+    const nextName = currentCampaign.banners.length ? currentCampaign.name : name;
+
     await tx.discountCampaign.update({
       where: { id },
-      data: { name, badgeLabel, badgeColor, discountType, startsAt, endsAt }
+      data: { name: nextName, badgeLabel, badgeColor, discountType, startsAt, endsAt }
     });
     await tx.discountCampaignProduct.deleteMany({ where: { campaignId: id } });
     await tx.discountCampaignProduct.createMany({
       data: productIds.map((productSkuId) => ({ campaignId: id, productSkuId, value }))
     });
+    await tx.promotionBanner.updateMany({
+      where: { campaignId: id, deletedAt: null },
+      data: { startsAt, endsAt }
+    });
   });
 
   revalidatePath("/admin/descuentos");
+  revalidatePath("/admin/banners");
   revalidatePath("/tienda");
+  revalidatePath("/");
   redirect("/admin/descuentos");
 }

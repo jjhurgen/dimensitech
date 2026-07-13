@@ -1,9 +1,17 @@
 import Link from "next/link";
 import { X } from "lucide-react";
-import { StoreFilters, activeFilterChips } from "@/lib/storefront";
+import { StoreCampaignFilterOption, StoreFilters, activeFilterChips } from "@/lib/storefront";
 
-export function ActiveFilterChips({ filters, basePath = "/tienda" }: { filters: StoreFilters; basePath?: string }) {
-  const chips = activeFilterChips(filters);
+export function ActiveFilterChips({
+  filters,
+  campaigns = [],
+  basePath = "/tienda"
+}: {
+  filters: StoreFilters;
+  campaigns?: StoreCampaignFilterOption[];
+  basePath?: string;
+}) {
+  const chips = activeFilterChips(filters, campaigns);
   if (!chips.length) return null;
   return (
     <div className="flex flex-wrap gap-2">

@@ -48,7 +48,6 @@ textarea {
 }
 
 .brand-logo-scroll {
-  cursor: grab;
   scrollbar-width: none;
 }
 
@@ -57,6 +56,10 @@ textarea {
 }
 
 .brand-logo-scroll.is-dragging {
+  cursor: grabbing;
+}
+
+.brand-logo-scroll.is-dragging a {
   cursor: grabbing;
 }
 

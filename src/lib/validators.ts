@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isKnownProductColor } from "@/lib/product-colors";
 
 export const providerSchema = z.object({
   name: z.string().min(2, "Nombre requerido"),
@@ -29,7 +30,7 @@ export const productSkuSchema = z.object({
   name: z.string().min(1),
   commercialModel: z.string().optional(),
   platform: z.enum(["ANDROID", "IPHONE"]).optional().nullable(),
-  color: z.string().optional(),
+  color: z.string().optional().refine((value) => isKnownProductColor(value), "Seleccione un color valido de la lista"),
   storage: z.string().optional(),
   ram: z.string().optional(),
   condition: z.enum(["NEW_SEALED", "REFURBISHED", "OPEN_BOX", "USED"]).default("NEW_SEALED"),
