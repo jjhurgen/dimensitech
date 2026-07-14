@@ -14,7 +14,7 @@ import { SlidersHorizontal } from "lucide-react";
 import { StoreFilters, getFeaturedStoreProducts, getStoreCampaignFilters, getStoreProducts, productSlug, titleForFilters } from "@/lib/storefront";
 import { prisma } from "@/lib/prisma";
 
-const PRODUCTS_PER_PAGE = 8;
+const PRODUCTS_PER_PAGE = 16;
 
 export async function StorefrontPage({
   searchParams,
