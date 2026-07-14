@@ -13,7 +13,7 @@ import { discountBadgeClass } from "@/lib/discount-badge-colors";
 import { productConditionLabel } from "@/lib/product-condition";
 import { prisma } from "@/lib/prisma";
 import { money } from "@/lib/utils";
-import { parseProductId, productSlug, getStoreProducts } from "@/lib/storefront";
+import { compareColorVariantsByStock, parseProductId, productSlug, getStoreProducts } from "@/lib/storefront";
 import { expireReservations, productWebStock } from "@/lib/services/reservations";
 import { activePromotionForProduct, activePromotionsForProducts } from "@/lib/promotions";
 import { absoluteUrl, jsonLdScript, productDescription, productTitle, siteName } from "@/lib/seo";
@@ -166,7 +166,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     orderBy: [{ color: "asc" }, { id: "asc" }]
   });
   const variantPromotions = await activePromotionsForProducts(variantRows.map((row) => row.id));
-  const colorVariants = await Promise.all(
+  const colorVariants = (await Promise.all(
     variantRows.map(async (row) => {
       const variantStock = await productWebStock(row.id);
       const variantPromotion = variantPromotions.get(row.id);
@@ -186,7 +186,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         isRequestOnly: variantStock <= 0 && row.availableOnRequest
       };
     })
-  );
+  )).sort(compareColorVariantsByStock);
   const variantIds = new Set(variantRows.map((row) => row.id));
   const related = (await getStoreProducts({ marca: product.brand })).filter((item) => !variantIds.has(item.id)).slice(0, 4);
   const phone = process.env.WHATSAPP_STORE_PHONE ?? "51999999999";

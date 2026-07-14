@@ -73,6 +73,12 @@ export type StoreCampaignFilterOption = {
   name: string;
 };
 
+type StockColorVariant = {
+  id: number;
+  color: string | null;
+  stock: number;
+};
+
 const categoryTypeMap: Record<string, string[]> = {
   celulares: ["Celular"],
   accesorios: ["Cubo", "Cable", "Case", "Mica", "Audifono", "Cargador", "Otro"],
@@ -149,6 +155,16 @@ function productGroupKey(product: StoreProduct) {
   ].map((value) => value.toLowerCase().trim()).join("|");
 }
 
+export function compareColorVariantsByStock(a: StockColorVariant, b: StockColorVariant) {
+  const stockDiff = b.stock - a.stock;
+  if (stockDiff !== 0) return stockDiff;
+
+  const colorDiff = (a.color ?? "").localeCompare(b.color ?? "", "es");
+  if (colorDiff !== 0) return colorDiff;
+
+  return a.id - b.id;
+}
+
 function groupProductsByColor(products: StoreProduct[]) {
   const groups = new Map<string, StoreProduct[]>();
   const order: string[] = [];
@@ -164,8 +180,9 @@ function groupProductsByColor(products: StoreProduct[]) {
 
   return order.map((key) => {
     const group = groups.get(key)!;
-    const representative = group[0];
-    const variants = group
+    const sortedGroup = [...group].sort(compareColorVariantsByStock);
+    const representative = sortedGroup[0];
+    const variants = sortedGroup
       .map((product) => ({
         id: product.id,
         slug: product.slug,
@@ -173,12 +190,7 @@ function groupProductsByColor(products: StoreProduct[]) {
         price: product.price,
         stock: product.stock,
         isRequestOnly: product.isRequestOnly
-      }))
-      .sort((a, b) => {
-        if (a.id === representative.id) return -1;
-        if (b.id === representative.id) return 1;
-        return (a.color ?? "").localeCompare(b.color ?? "", "es");
-      });
+      }));
 
     return { ...representative, colorVariants: variants };
   });
