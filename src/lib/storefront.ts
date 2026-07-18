@@ -165,6 +165,13 @@ export function compareColorVariantsByStock(a: StockColorVariant, b: StockColorV
   return a.id - b.id;
 }
 
+function compareByStockAvailability(a: StoreProduct, b: StoreProduct) {
+  const stockAvailabilityDiff = Number(b.stock > 0) - Number(a.stock > 0);
+  if (stockAvailabilityDiff !== 0) return stockAvailabilityDiff;
+
+  return 0;
+}
+
 function groupProductsByColor(products: StoreProduct[]) {
   const groups = new Map<string, StoreProduct[]>();
   const order: string[] = [];
@@ -313,6 +320,7 @@ export async function getStoreProducts(filters: StoreFilters) {
     if (filters.sort === "mayor-precio") return b.price - a.price;
     if (filters.sort === "mayor-stock") return b.stock - a.stock;
     if (filters.sort === "ultimas") return (a.stock || 999) - (b.stock || 999);
+    if (!filters.sort || filters.sort === "recomendados") return compareByStockAvailability(a, b);
     return 0;
   });
 
