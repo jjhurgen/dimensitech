@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Bell, Boxes, ClipboardList, CreditCard, Home, Image, Megaphone, Menu, Package, Percent, Settings, ShoppingBag, Tags, Truck, UserCog, Users, X } from "lucide-react";
+import { Activity, BarChart3, Bell, Boxes, ClipboardList, CreditCard, Home, Image, ListTree, Megaphone, Menu, Package, Percent, Settings, ShoppingBag, Tags, Truck, UserCog, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { logoutAction } from "@/app/login/actions";
@@ -10,10 +10,12 @@ import { cn } from "@/lib/utils";
 
 const items = [
   [Home, "Dashboard", "/admin"],
+  [Activity, "Analitica", "/admin/analitica"],
   [Truck, "Compras", "/admin/compras"],
   [CreditCard, "Ventas", "/admin/ventas"],
   [Boxes, "Inventario", "/admin/inventario"],
   [Package, "Productos/SKU", "/admin/productos"],
+  [ListTree, "Tipos producto", "/admin/tipos-productos"],
   [Percent, "Descuentos", "/admin/descuentos"],
   [Megaphone, "Banners", "/admin/banners"],
   [Tags, "Marcas", "/admin/marcas"],

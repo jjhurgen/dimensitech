@@ -638,3 +638,39 @@ model Setting {
 
   @@map("settings")
 }
+
+model WebAnalyticsSession {
+  id                  Int       @id @default(autoincrement())
+  sessionId           String    @unique @map("session_id") @db.VarChar(64)
+  visitorHash         String    @map("visitor_hash") @db.VarChar(64)
+  firstSeenAt         DateTime  @default(now()) @map("first_seen_at")
+  lastSeenAt          DateTime  @updatedAt @map("last_seen_at")
+  currentPath         String?   @map("current_path") @db.VarChar(500)
+  currentProductSkuId Int?      @map("current_product_sku_id")
+  referrer            String?   @db.VarChar(500)
+  userAgent           String?   @map("user_agent") @db.VarChar(500)
+
+  @@index([visitorHash])
+  @@index([lastSeenAt])
+  @@index([currentProductSkuId])
+  @@map("web_analytics_sessions")
+}
+
+model WebAnalyticsEvent {
+  id           BigInt   @id @default(autoincrement())
+  eventType    String   @map("event_type") @db.VarChar(40)
+  sessionId    String   @map("session_id") @db.VarChar(64)
+  visitorHash  String   @map("visitor_hash") @db.VarChar(64)
+  path         String   @db.VarChar(500)
+  productSkuId Int?     @map("product_sku_id")
+  referrer     String?  @db.VarChar(500)
+  userAgent    String?  @map("user_agent") @db.VarChar(500)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([eventType, createdAt])
+  @@index([sessionId, createdAt])
+  @@index([visitorHash, createdAt])
+  @@index([path, createdAt])
+  @@index([productSkuId, eventType, createdAt])
+  @@map("web_analytics_events")
+}

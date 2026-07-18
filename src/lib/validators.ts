@@ -22,6 +22,13 @@ export const customerSchema = z.object({
   observation: z.string().optional()
 });
 
+export const productTypeSchema = z.object({
+  name: z.string().trim().min(2, "Nombre requerido"),
+  requiresImei: z.boolean().default(false),
+  defaultMinStock: z.coerce.number().int().min(0).max(999).default(3),
+  status: z.enum(["ACTIVE", "INACTIVE"]).default("ACTIVE")
+});
+
 export const productSkuSchema = z.object({
   skuCode: z.string().min(2),
   productTypeId: z.coerce.number().positive(),

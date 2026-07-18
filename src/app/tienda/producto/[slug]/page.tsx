@@ -9,6 +9,7 @@ import { ProductGrid } from "@/components/store/product-grid";
 import { StoreCategoryBar } from "@/components/store/store-category-bar";
 import { StoreHeader } from "@/components/store/store-header";
 import { StoreBreadcrumb } from "@/components/store/store-breadcrumb";
+import { ProductViewTracker } from "@/components/store/store-analytics-tracker";
 import { discountBadgeClass } from "@/lib/discount-badge-colors";
 import { productConditionLabel } from "@/lib/product-condition";
 import { prisma } from "@/lib/prisma";
@@ -218,6 +219,7 @@ Quedo atento a la informacion.`);
 
   return (
     <main className="min-h-screen bg-[#f6f7f9]">
+      <ProductViewTracker productSkuId={product.id} />
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScript(productJsonLd)} />
       <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdScript(breadcrumbJsonLd)} />
       <StoreHeader />

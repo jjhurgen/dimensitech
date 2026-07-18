@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ShoppingCart, Truck } from "lucide-react";
 import { AddToCartButton } from "@/components/store/add-to-cart-button";
 import { ColorVariantLinks } from "@/components/store/color-variant-links";
+import { trackStoreAnalytics } from "@/components/store/store-analytics-tracker";
 import { discountBadgeClass } from "@/lib/discount-badge-colors";
 import { StoreProduct } from "@/lib/storefront";
 import { money } from "@/lib/utils";
@@ -36,7 +37,7 @@ export function ProductCard({ product, compact = false }: { product: StoreProduc
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:border-slate-300 hover:shadow-md">
-      <Link href={`/tienda/producto/${product.slug}`} className="relative block aspect-square overflow-hidden bg-white">
+      <Link href={`/tienda/producto/${product.slug}`} onClick={() => trackStoreAnalytics("product_click", product.id)} className="relative block aspect-square overflow-hidden bg-white">
         {product.isPhone && (product.storage || product.ram) ? (
           <div className="absolute left-3 top-3 z-10 flex flex-col items-start gap-1">
             {product.storage ? <span className="rounded bg-[#003f48] px-2 py-1 text-[11px] font-black text-white shadow-sm">{product.storage}</span> : null}
@@ -65,7 +66,7 @@ export function ProductCard({ product, compact = false }: { product: StoreProduc
       <div className={`flex flex-1 flex-col ${compact ? "p-2.5" : "p-2.5 sm:p-3.5"}`}>
         <div>
           <p className="text-xs font-black uppercase text-slate-500">{product.brand}</p>
-          <Link href={`/tienda/producto/${product.slug}`} className={`mt-1 line-clamp-2 font-semibold text-slate-900 hover:text-[#098d8f] ${compact ? "min-h-8 text-xs leading-4" : "min-h-9 text-xs leading-4 sm:min-h-10 sm:text-sm sm:leading-5"}`}>
+          <Link href={`/tienda/producto/${product.slug}`} onClick={() => trackStoreAnalytics("product_click", product.id)} className={`mt-1 line-clamp-2 font-semibold text-slate-900 hover:text-[#098d8f] ${compact ? "min-h-8 text-xs leading-4" : "min-h-9 text-xs leading-4 sm:min-h-10 sm:text-sm sm:leading-5"}`}>
             {product.name} {product.storage} {hasColorVariants ? "" : product.color}
           </Link>
           {hasColorVariants ? (
@@ -94,7 +95,7 @@ export function ProductCard({ product, compact = false }: { product: StoreProduc
 
         <div className={`mt-auto grid gap-2 ${compact ? "pt-2" : "pt-3"}`}>
           {requestOnly ? (
-            <Link href={`/tienda/producto/${product.slug}`} className={`inline-flex items-center justify-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 font-bold text-amber-700 shadow-sm transition hover:border-amber-300 hover:bg-amber-100 ${compact ? "h-8 text-[11px]" : "h-9 text-xs sm:h-10 sm:gap-2 sm:px-3 sm:text-sm"}`}>
+            <Link href={`/tienda/producto/${product.slug}`} onClick={() => trackStoreAnalytics("product_click", product.id)} className={`inline-flex items-center justify-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 font-bold text-amber-700 shadow-sm transition hover:border-amber-300 hover:bg-amber-100 ${compact ? "h-8 text-[11px]" : "h-9 text-xs sm:h-10 sm:gap-2 sm:px-3 sm:text-sm"}`}>
               Ver pedido
             </Link>
           ) : (
@@ -104,7 +105,7 @@ export function ProductCard({ product, compact = false }: { product: StoreProduc
             </AddToCartButton>
           )}
           <div>
-            <Link href={`/tienda/producto/${product.slug}`} className={`flex items-center justify-center rounded-md border border-slate-200 font-bold text-slate-700 hover:bg-slate-50 ${compact ? "h-8 text-xs" : "h-9 text-sm"}`}>
+            <Link href={`/tienda/producto/${product.slug}`} onClick={() => trackStoreAnalytics("product_click", product.id)} className={`flex items-center justify-center rounded-md border border-slate-200 font-bold text-slate-700 hover:bg-slate-50 ${compact ? "h-8 text-xs" : "h-9 text-sm"}`}>
               Ver detalle
             </Link>
           </div>

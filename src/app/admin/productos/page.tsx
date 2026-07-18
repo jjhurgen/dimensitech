@@ -26,6 +26,7 @@ export default async function ProductsPage({ searchParams }: { searchParams?: Pr
     prisma.productSku.count({ where: q ? { OR: [{ name: { contains: q } }, { skuCode: { contains: q } }] } : {} })
   ]);
   const typeOptions = types.map((type) => ({ id: type.id, name: type.name, requiresImei: type.requiresImei }));
+  const activeTypeOptions = types.filter((type) => type.status === "ACTIVE").map((type) => ({ id: type.id, name: type.name, requiresImei: type.requiresImei }));
   const imageOptions = images.map((image) => ({ id: image.id, productName: image.productName, brand: image.brand, color: image.color }));
   const brandOptions = brands.map((brand) => ({ id: brand.id, name: brand.name }));
   return (
@@ -36,7 +37,7 @@ export default async function ProductsPage({ searchParams }: { searchParams?: Pr
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
             <form className="w-full sm:w-64"><Input name="q" placeholder="Buscar producto" defaultValue={q} /></form>
             <AdminModal title="Producto / SKU" triggerLabel="Nuevo SKU" description="Crea un SKU para inventario, compras, ventas y catalogo web.">
-              <ProductSkuForm types={typeOptions} images={imageOptions} brands={brandOptions} />
+              <ProductSkuForm types={activeTypeOptions} images={imageOptions} brands={brandOptions} />
             </AdminModal>
           </div>
         </div>
